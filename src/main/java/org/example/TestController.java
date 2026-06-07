@@ -9,6 +9,7 @@ public class TestController {
 
   @GetMapping("/test")
   public ResponseEntity<String> test() {
+	System.out.println("== /test invoked ==");  
     return ResponseEntity.ok("railway-test OK");
   }
 }
