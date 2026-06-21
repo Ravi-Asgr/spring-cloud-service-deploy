@@ -1,7 +1,7 @@
 server:
-  address: 0.0.0.0
-  #port config
-  port: ${PORT:8080}
+  #address: 0.0.0.0
+  #port config, Hugging Face Spaces require port 7860
+  port: 7860
 
   tomcat:
     accesslog:
