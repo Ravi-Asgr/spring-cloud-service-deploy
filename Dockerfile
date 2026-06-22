@@ -1,26 +1,23 @@
-# Stage 1: build with Maven and Temurin JDK
-FROM maven:3.9.6-eclipse-temurin-17 AS builder
-WORKDIR /workspace
-
-# Copy only what is needed for dependency resolution first (speeds up rebuilds)
+# Step 1: Build stage
+FROM maven:3.9.6-eclipse-temurin-17 AS build
+WORKDIR /app
 COPY pom.xml .
 COPY src ./src
+RUN mvn clean package -DskipTests
 
-# Build the application jar (skip tests for faster builds; remove -DskipTests for CI)
-RUN mvn -B -DskipTests package
-
-# Stage 2: runtime image using Temurin JRE
+# Step 2: Runtime stage
 FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 
-# Copy the fat jar from the builder stage
-COPY --from=builder /workspace/target/*.jar app.jar
+# Create a non-root user with UID 1000 required by Hugging Face Spaces
+RUN useradd -m -u 1000 appuser
+USER appuser
 
-# Recommended JVM options; tune Xmx for your host
-ENV JAVA_OPTS="-Xms256m -Xmx1024m"
-ENV PORT=8080
+# Copy the compiled jar from the build stage
+COPY --from=build /app/target/*.jar app.jar
 
-EXPOSE 8080
+# Expose the mandatory Hugging Face port
+EXPOSE 7860
 
-# Entrypoint uses the PORT env so platforms like Railway/Render pick it up
-ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar --server.port=${PORT}"]
+# Run the Spring Boot application
+ENTRYPOINT ["java", "-jar", "app.jar"]
